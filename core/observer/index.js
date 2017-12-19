@@ -1,4 +1,13 @@
 import Dep from './dep.js'
+import { arrayMethods } from './array'
+import {
+  hasProto,
+  def,
+  isObject,
+  hasOwn
+} from './util.js'
+
+const arrayKeys = Object.getOwnPropertyNames(arrayMethods)
 
 /**
  * Observer 类会附加到每一个被侦测的 object 上。
@@ -8,8 +17,15 @@ import Dep from './dep.js'
 export default class Observer {
   constructor (value) {
     this.value = value
+    this.dep = new Dep()
+    def(value, '__ob__', this)
 
-    if (!Array.isArray(value)) {
+    if (Array.isArray(value)) {
+      const augment = hasProto
+        ? protoAugment
+        : copyAugment
+      augment(value, arrayMethods, arrayKeys)
+    } else {
       this.walk(value)
     }
   }
@@ -24,19 +40,43 @@ export default class Observer {
       defineReactive(obj, keys[i], obj[keys[i]])
     }
   }
+
+  observeArray (items) {
+    for (let i = 0, l = items.length; i < l; i++) {
+      observe(items[i])
+    }
+  }
+}
+
+/**
+ * 尝试为 value 创建一个 Observer 实例，
+ * 如果创建成功直接返回新创建的 Observer实例。
+ * 如果 value 已经已经存在一个 Observer 实例则直接返回它
+ */
+export function observe (value, asRootData) {
+  if (!isObject(value)) {
+    return
+  }
+  let ob
+  if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
+    ob = value.__ob__
+  } else {
+    ob = new Observer(value)
+  }
+  return ob
 }
 
 function defineReactive (data, key, val) {
-  // 新增，递归子属性
-  if (typeof val === 'object') {
-    new Observer(val)
-  }
+  let childOb = observe(val)
   let dep = new Dep()
   Object.defineProperty(data, key, {
       enumerable: true,
       configurable: true,
       get: function () {
         dep.depend()
+        if (childOb) {
+          childOb.dep.depend()
+        }
         return val
       },
       set: function (newVal) {
@@ -47,4 +87,15 @@ function defineReactive (data, key, val) {
         dep.notify()
       }
   })
+}
+
+function protoAugment (target, src, keys) {
+  target.__proto__ = src
+}
+
+function copyAugment (target, src, keys) {
+  for (let i = 0, l = keys.length; i < l; i++) {
+    const key = keys[i]
+    def(target, key, src[key])
+  }
 }

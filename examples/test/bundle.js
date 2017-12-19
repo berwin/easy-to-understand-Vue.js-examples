@@ -29,6 +29,65 @@ class Dep {
   }
 }
 
+const arrayProto = Array.prototype;
+const arrayMethods = Object.create(arrayProto);[
+  'push',
+  'pop',
+  'shift',
+  'unshift',
+  'splice',
+  'sort',
+  'reverse'
+]
+.forEach(function (method) {
+  // cache original method
+  const original = arrayProto[method];
+  Object.defineProperty(arrayMethods, method, {
+    value: function mutator (...args) {
+      const result = original.apply(this, args);
+      const ob = this.__ob__;
+      let inserted;
+      switch (method) {
+        case 'push':
+        case 'unshift':
+          inserted = args;
+          break
+        case 'splice':
+          inserted = args.slice(2);
+          break
+      }
+      if (inserted) ob.observeArray(inserted);
+      ob.dep.notify();
+      return result
+    },
+    enumerable: false,
+    writable: true,
+    configurable: true
+  });
+});
+
+function def (obj, key, val, enumerable) {
+  Object.defineProperty(obj, key, {
+    value: val,
+    enumerable: !!enumerable,
+    writable: true,
+    configurable: true
+  });
+}
+
+const hasProto = '__proto__' in {};
+
+function isObject (obj) {
+  return obj !== null && typeof obj === 'object'
+}
+
+const hasOwnProperty = Object.prototype.hasOwnProperty;
+function hasOwn (obj, key) {
+  return hasOwnProperty.call(obj, key)
+}
+
+const arrayKeys = Object.getOwnPropertyNames(arrayMethods);
+
 /**
  * Observer 类会附加到每一个被侦测的 object 上。
  * 一旦被附加上，Observer 会将 object 的所有属性转换为 getter/setter 的形式
@@ -37,8 +96,15 @@ class Dep {
 class Observer {
   constructor (value) {
     this.value = value;
+    this.dep = new Dep();
+    def(value, '__ob__', this);
 
-    if (!Array.isArray(value)) {
+    if (Array.isArray(value)) {
+      const augment = hasProto
+        ? protoAugment
+        : copyAugment;
+      augment(value, arrayMethods, arrayKeys);
+    } else {
       this.walk(value);
     }
   }
@@ -53,19 +119,43 @@ class Observer {
       defineReactive(obj, keys[i], obj[keys[i]]);
     }
   }
+
+  observeArray (items) {
+    for (let i = 0, l = items.length; i < l; i++) {
+      observe(items[i]);
+    }
+  }
+}
+
+/**
+ * 尝试为 value 创建一个 Observer 实例，
+ * 如果创建成功直接返回新创建的 Observer实例。
+ * 如果 value 已经已经存在一个 Observer 实例则直接返回它
+ */
+function observe (value, asRootData) {
+  if (!isObject(value)) {
+    return
+  }
+  let ob;
+  if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
+    ob = value.__ob__;
+  } else {
+    ob = new Observer(value);
+  }
+  return ob
 }
 
 function defineReactive (data, key, val) {
-  // 新增，递归子属性
-  if (typeof val === 'object') {
-    new Observer(val);
-  }
+  let childOb = observe(val);
   let dep = new Dep();
   Object.defineProperty(data, key, {
       enumerable: true,
       configurable: true,
       get: function () {
         dep.depend();
+        if (childOb) {
+          childOb.dep.depend();
+        }
         return val
       },
       set: function (newVal) {
@@ -76,6 +166,17 @@ function defineReactive (data, key, val) {
         dep.notify();
       }
   });
+}
+
+function protoAugment (target, src, keys) {
+  target.__proto__ = src;
+}
+
+function copyAugment (target, src, keys) {
+  for (let i = 0, l = keys.length; i < l; i++) {
+    const key = keys[i];
+    def(target, key, src[key]);
+  }
 }
 
 class Watcher {
@@ -119,12 +220,28 @@ function parsePath (path) {
   }
 }
 
-const obj = {a: '123'};
+const obj = {title: 'users', list: [{name: 'berwin', age: 22}]};
 new Observer(obj);
-new Watcher(obj, 'a', (newValue, oldValue) => {
-  console.log(newValue, oldValue);
+new Watcher(obj, 'title', (newValue, oldValue) => {
+  console.log('title: ', newValue, oldValue);
+});
+
+new Watcher(obj, 'list', (newValue) => {
+  console.log('list: ', newValue);
 });
 
 window.obj = obj;
+
+document.getElementById('fetch').onclick = function () {
+  console.log(obj);
+};
+
+document.getElementById('push').onclick = function () {
+  obj.list.push({name: 'bowen', age: 23});
+};
+
+document.getElementById('changeTitle').onclick = function () {
+  obj.title = 'Users';
+};
 
 }());
