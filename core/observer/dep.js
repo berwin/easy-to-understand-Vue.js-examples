@@ -1,5 +1,8 @@
+let uid = 0
+
 export default class Dep {
   constructor () {
+    this.id = uid++
     this.subs = []
   }
 
@@ -13,7 +16,14 @@ export default class Dep {
 
   depend () {
     if (window.target) {
-      this.addSub(window.target)
+      window.target.addDep(this)
+    }
+  }
+
+  removeSub (sub) {
+    const index = this.subs.indexOf(sub)
+    if (index > -1) {
+      return this.subs.splice(index, 1)
     }
   }
 
