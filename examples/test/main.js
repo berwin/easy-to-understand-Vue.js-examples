@@ -38,6 +38,9 @@ const handlers = {
   set () {
     vue.$set(vue.data, 'name', Math.random())
   },
+  del () {
+    vue.$delete(vue.data.deep, 'a')
+  },
   unwatch () {
     unwatchList()
     unwatchTitle()

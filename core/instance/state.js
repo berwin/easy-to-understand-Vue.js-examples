@@ -1,4 +1,4 @@
-import { set } from '../observer/index'
+import { set, del } from '../observer/index'
 import Watcher from '../observer/watcher.js'
 
 export function stateMixin (Vue) {
@@ -14,4 +14,5 @@ export function stateMixin (Vue) {
     }
   }
   Vue.prototype.$set = set
+  Vue.prototype.$delete = del
 }

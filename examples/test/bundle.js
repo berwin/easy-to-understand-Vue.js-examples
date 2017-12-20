@@ -96,6 +96,11 @@ function hasOwn (obj, key) {
   return hasOwnProperty.call(obj, key)
 }
 
+function isValidArrayIndex (val) {
+  const n = parseFloat(String(val));
+  return n >= 0 && Math.floor(n) === n && isFinite(val)
+}
+
 const arrayKeys = Object.getOwnPropertyNames(arrayMethods);
 
 /**
@@ -218,6 +223,30 @@ function set (target, key, val) {
   return val
 }
 
+function del (target, key) {
+  if (Array.isArray(target) && isValidArrayIndex(key)) {
+    target.splice(key, 1);
+    return
+  }
+  const ob = (target).__ob__;
+  if (target._isVue || (ob && ob.vmCount)) {
+    process.env.NODE_ENV !== 'production' && console.warn(
+      'Avoid deleting properties on a Vue instance or its root $data ' +
+      '- just set it to null.'
+    );
+    return
+  }
+  if (!hasOwn(target, key)) {
+    return
+  }
+  delete target[key];
+
+  if (!ob) {
+    return
+  }
+  ob.dep.notify();
+}
+
 class Watcher {
   constructor (vm, expOrFn, cb, options) {
     this.vm = vm;
@@ -329,6 +358,7 @@ function stateMixin (Vue) {
     }
   };
   Vue.prototype.$set = set;
+  Vue.prototype.$delete = del;
 }
 
 function Vue$1 (options) {
@@ -376,6 +406,9 @@ const handlers = {
   },
   set () {
     vue.$set(vue.data, 'name', Math.random());
+  },
+  del () {
+    vue.$delete(vue.data.deep, 'a');
   },
   unwatch () {
     unwatchList();

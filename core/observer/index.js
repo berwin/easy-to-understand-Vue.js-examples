@@ -4,7 +4,8 @@ import {
   hasProto,
   def,
   isObject,
-  hasOwn
+  hasOwn,
+  isValidArrayIndex
 } from './util.js'
 
 const arrayKeys = Object.getOwnPropertyNames(arrayMethods)
@@ -127,4 +128,28 @@ export function set (target, key, val) {
   defineReactive(ob.value, key, val)
   ob.dep.notify()
   return val
+}
+
+export function del (target, key) {
+  if (Array.isArray(target) && isValidArrayIndex(key)) {
+    target.splice(key, 1)
+    return
+  }
+  const ob = (target).__ob__
+  if (target._isVue || (ob && ob.vmCount)) {
+    process.env.NODE_ENV !== 'production' && console.warn(
+      'Avoid deleting properties on a Vue instance or its root $data ' +
+      '- just set it to null.'
+    )
+    return
+  }
+  if (!hasOwn(target, key)) {
+    return
+  }
+  delete target[key]
+
+  if (!ob) {
+    return
+  }
+  ob.dep.notify()
 }
