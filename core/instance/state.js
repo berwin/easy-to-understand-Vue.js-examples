@@ -1,3 +1,4 @@
+import { set } from '../observer/index'
 import Watcher from '../observer/watcher.js'
 
 export function stateMixin (Vue) {
@@ -12,4 +13,5 @@ export function stateMixin (Vue) {
       watcher.teardown()
     }
   }
+  Vue.prototype.$set = set
 }

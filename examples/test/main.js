@@ -8,39 +8,43 @@ const vue = new Vue({
   }
 })
 
+window.vue = vue
+
 const unwatchList = vue.$watch('data.list', (newValue) => {
   console.log('list: ', newValue)
 })
 
 const unwatchDeep = vue.$watch('data.deep', (newValue, oldValue) => {
-  console.log('deep: ', newValue.a.b.name, oldValue.a.b.name)
+  console.log('deep: ', newValue, oldValue)
 }, {deep: true})
 
 const unwatchTitle = vue.$watch('data.title', (newValue, oldValue) => {
   console.log('title: ', newValue, oldValue)
 }, {immediate: true})
 
-window.vue = vue
-
-document.getElementById('fetch').onclick = function () {
-  console.log(vue)
+const handlers = {
+  fetch () {
+    console.log(vue.data)
+  },
+  push () {
+    vue.data.list.push({name: 'bowen', age: Math.random()})
+  },
+  changeTitle () {
+    vue.data.title = Math.random()
+  },
+  deepChange () {
+    vue.data.deep.a.b.name = Math.random()
+  },
+  set () {
+    vue.$set(vue.data, 'name', Math.random())
+  },
+  unwatch () {
+    unwatchList()
+    unwatchTitle()
+    unwatchDeep()
+  }
 }
 
-document.getElementById('push').onclick = function () {
-  vue.data.list.push({name: 'bowen', age: Math.random()})
+document.body.onclick = function (event) {
+  handlers[event.target.id] && handlers[event.target.id]()
 }
-
-document.getElementById('changeTitle').onclick = function () {
-  vue.data.title = Math.random()
-}
-
-document.getElementById('deepChange').onclick = function () {
-  vue.data.deep.a.b.name = Math.random()
-}
-
-document.getElementById('unwatch').onclick = function () {
-  unwatchList()
-  unwatchTitle()
-  unwatchDeep();
-}
-
