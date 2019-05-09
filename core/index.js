@@ -1,3 +1,3 @@
-import Vue from './instance/index'
+import Vue from './instance/index.js'
 
 export default Vue

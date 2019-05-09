@@ -1,5 +1,5 @@
 import Dep from './dep.js'
-import { arrayMethods } from './array'
+import { arrayMethods } from './array.js'
 import {
   hasProto,
   def,
