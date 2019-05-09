@@ -26,6 +26,7 @@ export default class Observer {
         ? protoAugment
         : copyAugment
       augment(value, arrayMethods, arrayKeys)
+      this.observeArray(value)
     } else {
       this.walk(value)
     }
