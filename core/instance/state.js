@@ -1,4 +1,4 @@
-import { set, del } from '../observer/index'
+import { set, del } from '../observer/index.js'
 import Watcher from '../observer/watcher.js'
 
 export function stateMixin (Vue) {
